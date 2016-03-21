@@ -296,4 +296,6 @@ void update_visibility(swayc_t *container);
  */
 void close_views(swayc_t *container);
 
+swayc_t *new_swayc(enum swayc_types type);
+
 #endif

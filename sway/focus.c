@@ -31,7 +31,9 @@ static void update_focus(swayc_t *c) {
 		case C_OUTPUT:
 			// update borders for views in prev
 			container_map(prev, map_update_view_border, NULL);
-			wlc_output_focus(c->handle);
+			if (c->handle != UINTPTR_MAX) {
+				wlc_output_focus(c->handle);
+			}
 			break;
 
 		// Case where workspace changes
