@@ -265,14 +265,18 @@ static bool handle_view_created(wlc_handle handle) {
 		if (workspace && workspace->fullscreen) {
 			set_focused_container(workspace->fullscreen);
 		}
+		output = swayc_parent_by_type(newview, C_OUTPUT); // may have changed
+		if (output->handle != UINTPTR_MAX) {
+			wlc_view_set_mask(handle, VISIBLE);
+		}
 	} else {
 		swayc_t *output = swayc_parent_by_type(focused, C_OUTPUT);
 		wlc_handle *h = malloc(sizeof(wlc_handle));
 		*h = handle;
 		sway_log(L_DEBUG, "Adding unmanaged window %p to %p", h, output->unmanaged);
 		list_add(output->unmanaged, h);
+		wlc_view_set_mask(handle, VISIBLE);
 	}
-	wlc_view_set_mask(handle, VISIBLE);
 	return true;
 }
 
@@ -741,18 +745,6 @@ bool handle_pointer_scroll(wlc_handle view, uint32_t time, const struct wlc_modi
 
 static void handle_wlc_ready(void) {
 	sway_log(L_DEBUG, "Compositor is ready, executing cmds in queue");
-	// Execute commands until there are none left
-	config->active = true;
-	while (config->cmd_queue->length) {
-		char *line = config->cmd_queue->items[0];
-		struct cmd_results *res = handle_command(line);
-		if (res->status != CMD_SUCCESS) {
-			sway_log(L_ERROR, "Error on line '%s': %s", line, res->error);
-		}
-		free_cmd_results(res);
-		free(line);
-		list_del(config->cmd_queue, 0);
-	}
 	// VT220 stuff
 	// Adds a made up output that we can use for a tmux window
 	// connected to my vt220
@@ -768,6 +760,18 @@ static void handle_wlc_ready(void) {
 	output->y = 0;
 	new_workspace(output, "__VT220");
 	// End VT220 stuff
+	// Execute commands until there are none left
+	config->active = true;
+	while (config->cmd_queue->length) {
+		char *line = config->cmd_queue->items[0];
+		struct cmd_results *res = handle_command(line);
+		if (res->status != CMD_SUCCESS) {
+			sway_log(L_ERROR, "Error on line '%s': %s", line, res->error);
+		}
+		free_cmd_results(res);
+		free(line);
+		list_del(config->cmd_queue, 0);
+	}
 }
 
 void register_wlc_handlers() {
